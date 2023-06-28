@@ -4,12 +4,17 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +25,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,7 +46,7 @@ class MainActivity : ComponentActivity() {
 }
 @Composable
 private fun MyApp(modifier: Modifier = Modifier){
-    var shouldShowOnboarding by remember { mutableStateOf(true) }
+    var shouldShowOnboarding by rememberSaveable { mutableStateOf(true) }
     Surface(
        // modifier = Modifier.fillMaxSize(),
         modifier,
@@ -55,11 +61,12 @@ private fun MyApp(modifier: Modifier = Modifier){
 }
 @Composable
 private fun Greetings( modifier: Modifier = Modifier,
-                       names: List<String> = listOf("World", "Compose", "UTT")){
-            Column(modifier = modifier.padding(vertical = 4.dp)) {
-            for (name in names){
-                Greeting(name = name)
-            }
+                       names: List<String> = List(100){"$it"}){
+            LazyColumn(modifier = modifier.padding(vertical = 4.dp)) {
+                items(items = names) { name ->
+                    Greeting(name = name)
+                }
+
         }
 }
 @Composable
@@ -81,21 +88,26 @@ private fun OnboardScreen(onContinueClicked: ()-> Unit, modifier: Modifier = Mod
 }
 @Composable
 private fun Greeting(name: String) {
-    val expanded = remember{mutableStateOf(false)}
-    val extraPadding = if(expanded.value)48.dp else 0.dp
+    var expanded by remember{mutableStateOf(false)}
+    val extraPadding by animateDpAsState(if(expanded) 48.dp else 0.dp,
+    animationSpec = spring(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessLow
+    )
+    )
     Surface(color = MaterialTheme.colorScheme.primary,
-    modifier = Modifier.padding(vertical = 4.dp, horizontal = 18.dp)) {
-        Row(modifier = Modifier.padding(20.dp)) {
+    modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp)) {
+        Row(modifier = Modifier.padding(24.dp)) {
             Column(modifier = Modifier
                 .weight(1f)
-                .padding(bottom = extraPadding)) {
+                .padding(bottom = extraPadding.coerceAtLeast(0.dp))) {
                 Text(text = "DucAnh,")
                 Text(text = name)
             }
             ElevatedButton(onClick = {
-                expanded.value = !expanded.value
+                expanded = !expanded
             }) {
-                Text(if (expanded.value) "Show Less" else "Show More")
+                Text(if (expanded) "Show Less" else "Show More")
 
 
             }
@@ -108,7 +120,7 @@ private fun Greeting(name: String) {
 @Composable
 fun GreetingPreview() {
     MyApplicationTheme {
-      MyApp()
+      MyApp(Modifier.fillMaxSize())
     }
 }
 @Preview(showBackground = true, widthDp = 320)
